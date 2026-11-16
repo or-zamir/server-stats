@@ -13,7 +13,7 @@ if [[ $(uname -s) != Linux || ! -r /proc/stat ]]; then
     exit 1
 fi
 
-for dependency in awk df ps nproc hostname uptime who wc sleep sed; do
+for dependency in awk df ps nproc hostname uptime who wc sleep sed grep; do
     if ! command -v "$dependency" >/dev/null 2>&1; then
         printf 'Error: required command not found: %s\n' "$dependency" >&2
         exit 1
@@ -65,13 +65,13 @@ awk '
 # ---------------------------------------------------------------- Disk usage
 section "Disk Usage"
 df -P -k -l -x tmpfs -x devtmpfs -x squashfs 2>/dev/null | awk '
-    NR == 1 { printf "%-25s %10s %10s %10s %6s\n", "Mount", "Size", "Used", "Free", "Use%"; next }
+    NR == 1 { printf "%-25s %10s %10s %10s %7s %7s\n", "Mount", "Size (GiB)", "Used (GiB)", "Free (GiB)", "Used%", "Free%"; next }
     {
         size+=$2; used+=$3; free+=$4
-        printf "%-25s %9.1fG %9.1fG %9.1fG %6s\n", $6, $2/1048576, $3/1048576, $4/1048576, $5
+        printf "%-25s %10.1f %10.1f %10.1f %6.1f%% %6.1f%%\n", $6, $2/1048576, $3/1048576, $4/1048576, ($2 ? 100*$3/$2 : 0), ($2 ? 100*$4/$2 : 0)
     }
     END {
-        if (size) printf "%-25s %9.1fG %9.1fG %9.1fG %5.1f%%\n", "TOTAL", size/1048576, used/1048576, free/1048576, 100*used/size
+        if (size) printf "%-25s %10.1f %10.1f %10.1f %6.1f%% %6.1f%%\n", "TOTAL", size/1048576, used/1048576, free/1048576, 100*used/size, 100*free/size
     }'
 
 # ---------------------------------------------------------------- Top processes
